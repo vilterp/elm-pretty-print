@@ -1,6 +1,6 @@
 {
     "version": "1.0.0",
-    "summary": "pretty printing combinators based on Wadler's formulation",
+    "summary": "combinators for pretty printing based on available width",
     "repository": "https://github.com/vilterp/elm-pretty-print.git",
     "license": "BSD3",
     "source-directories": [

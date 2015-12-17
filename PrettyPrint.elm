@@ -1,7 +1,7 @@
 module PrettyPrint
   ( Doc
   , empty, concat, nest, text, line
-  , group
+  , flattenable, collapsible
   , prettyHtml, prettyString
   ) where
 
@@ -17,7 +17,7 @@ Perhaps some of the primitives and combinators from
 @docs Doc, empty, concat, nest, text, line
 
 # Combinators
-@docs group
+@docs flattenable, collapsible
 
 # Render
 @docs prettyHtml, prettyString
@@ -36,6 +36,7 @@ type Doc
   | Text (List Attribute) String
   | Line
   | Union Doc Doc
+  | Collapsed
 
 
 -- CONSTRUCTORS
@@ -71,6 +72,11 @@ line =
   Line
 
 
+collapsed : Doc
+collapsed =
+  Collapsed
+
+
 -- not exposed
 union : Doc -> Doc -> Doc
 union =
@@ -81,8 +87,8 @@ union =
 
 {-| Specify that the Doc should be printed without newlines if it fits in the
 available space, or without them if it doesn't -}
-group : Doc -> Doc
-group doc =
+flattenable : Doc -> Doc
+flattenable doc =
   union (flatten doc) doc
 
 
@@ -106,6 +112,15 @@ flatten doc =
 
     Union docA docB ->
       Union (flatten docA) (flatten docB)
+
+    Collapsed ->
+      Collapsed
+
+
+{-|-}
+collapsible : Doc -> Doc
+collapsible doc =
+  union doc collapsed
 
 
 -- RENDER
@@ -155,6 +170,9 @@ best maxWidth doc =
 
         (indent, Line) :: rest ->
           SLine indent (recurse indent rest)
+
+        (indent, Collapsed) :: rest ->
+          recurse already ((indent, text [] "...") :: rest)
 
         (indent, Union docA docB) :: rest ->
           better

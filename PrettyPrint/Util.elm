@@ -12,7 +12,7 @@ import PrettyPrint exposing (..)
 and a close marker -}
 bracket : Int -> (List Attribute, String) -> Doc -> (List Attribute, String) -> Doc
 bracket indent (leftAttrs, left) doc (rightAttrs, right) =
-  group
+  flattenable
     (PrettyPrint.text leftAttrs left
       `concat` nest indent (line `concat` doc) `concat` line
       `concat` PrettyPrint.text rightAttrs right)

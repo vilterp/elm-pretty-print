@@ -15,7 +15,7 @@ type Tree =
 showTree tree =
   case tree of
     Node s ts ->
-      group (text [] s `concat` nest (String.length s) (showBracket ts))
+      flattenable (text [] s `concat` nest (String.length s) (showBracket ts))
 
 showBracket trees =
   case trees of
@@ -66,20 +66,22 @@ showTrees' trees =
 -- render
 
 exampleTree =
-  Node "aaaaaaaaaaaaaaaaaa" [
-    Node "bbbbbbbbbbbbbbbbbbbbbbbb" [
-      Node "ccccccccccccccccccccccccccccccccccccccccccccc" [],
-      Node "dddddddddddddddddddddddddddddddddddddddddddddddddddddddd" []
-    ],
-    Node "eeeee" []
-  ]
+  --Node "aaaaaaaaaaaaaaaaaa" [
+  --  Node "bbbbbbbbbbbbbbbbbbbbbbbb" [
+  --    Node "ccccccccccccccccccccccccccccccccccccccccccccc" [],
+  --    Node "dddddddddddddddddddddddddddddddddddddddddddddddddddddddd" []
+  --  ],
+  --  Node "eeeee" []
+  --]
+  Node "Array" (List.map (\i -> Node (toString i) []) [1..20])
 
 
 render : Doc -> (Int, Int) -> Html
 render doc (width, height) =
+  --let d = Debug.log "foo" [1,2,3] in
   div
     [ style [("font-size", "12px")] ]
-    [ prettyHtml (round (toFloat width / 7.3)) doc ] -- experimentally determined width of char...
+    [ prettyHtml (round (toFloat width / 7.3)) (Debug.log "doc" doc) ] -- experimentally determined width of char...
 
 
 exampleDoc =
@@ -93,7 +95,11 @@ exampleDoc =
 
 main : Signal Html
 main =
-  Signal.map
-    (render (showTree exampleTree))
-    --(render exampleDoc)
-    Window.dimensions
+  let
+    doc =
+      showTree exampleTree
+  in
+    Signal.map
+      (render doc)
+      --(render exampleDoc)
+      Window.dimensions

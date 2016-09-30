@@ -1,9 +1,9 @@
-module PrettyPrint
+module PrettyPrint exposing
   ( Doc
   , empty, concat, nest, text, line
   , group
   , prettyHtml, prettyString
-  ) where
+  )
 
 {-| Based on [Wadler's paper][wadler]
 
@@ -29,50 +29,50 @@ import Html exposing (..)
 import Html.Attributes exposing (style)
 
 {-|-}
-type Doc
+type Doc a
   = Empty
-  | Concat Doc Doc
-  | Nest Int Doc
-  | Text (List Attribute) String
+  | Concat (Doc a) (Doc a)
+  | Nest Int (Doc a)
+  | Text (List (Attribute a)) String
   | Line
-  | Union Doc Doc
+  | Union (Doc a) (Doc a)
 
 
 -- CONSTRUCTORS
 
 
 {-|-}
-empty : Doc
+empty : Doc a
 empty =
   Empty
 
 
 {-|-}
-concat : Doc -> Doc -> Doc
+concat : Doc a -> Doc a -> Doc a
 concat =
   Concat
 
 
 {-| Indent the given doc by the given number of spaces. -}
-nest : Int -> Doc -> Doc
+nest : Int -> Doc a -> Doc a
 nest =
   Nest
 
 
 {-|-}
-text : List Attribute -> String -> Doc
+text : List (Attribute a) -> String -> Doc a
 text =
   Text
 
 
 {-| Line break -}
-line : Doc
+line : Doc a
 line =
   Line
 
 
 -- not exposed
-union : Doc -> Doc -> Doc
+union : Doc a -> Doc a -> Doc a
 union =
   Union
 
@@ -81,12 +81,12 @@ union =
 
 {-| Specify that the Doc should be printed without newlines if it fits in the
 available space, or without them if it doesn't -}
-group : Doc -> Doc
+group : Doc a -> Doc a
 group doc =
   union (flatten doc) doc
 
 
-flatten : Doc -> Doc
+flatten : Doc a -> Doc a
 flatten doc =
   case doc of
     Empty ->
@@ -111,30 +111,30 @@ flatten doc =
 -- RENDER
 
 
-type NormalForm
-  = SText (List Attribute) String NormalForm
+type NormalForm a
+  = SText (List (Attribute a)) String (NormalForm a)
   | SEmpty
-  | SLine Int NormalForm
+  | SLine Int (NormalForm a)
 
 
 {-| Pretty print the document to HTML which fits within the
 max width (in characters; font size up to you) -}
-prettyHtml : Int -> Doc -> Html
+prettyHtml : Int -> Doc a -> Html a
 prettyHtml maxWidth doc =
   layoutHtml (best maxWidth doc)
 
 
 {-| Pretty print the document to string which fits within the
 max width (in characters) -}
-prettyString : Int -> Doc -> String
+prettyString : Int -> Doc a -> String
 prettyString maxWidth doc =
   layoutString (best maxWidth doc)
 
 
-best : Int -> Doc -> NormalForm
+best : Int -> Doc a -> NormalForm a
 best maxWidth doc =
   let
-    recurse : Int -> List (Int, Doc) -> NormalForm
+    recurse : Int -> List (Int, Doc a) -> NormalForm a
     recurse already pairs =
       --let d = Debug.log "mw,a,p" (maxWidth, already, pairs) in
       case pairs of
@@ -162,11 +162,11 @@ best maxWidth doc =
             (recurse already ((indent, docA)::rest))
             (recurse already ((indent, docB)::rest))
 
-    better : Int -> NormalForm -> NormalForm -> NormalForm
+    better : Int -> NormalForm a -> NormalForm a -> NormalForm a
     better already nfA nfB =
       if fits (maxWidth - already) nfA then nfA else nfB
 
-    fits : Int -> NormalForm -> Bool
+    fits : Int -> NormalForm a -> Bool
     fits width nf =
       if width < 0 then
         False
@@ -184,10 +184,10 @@ best maxWidth doc =
     recurse 0 [(0, doc)]
 
 
-layoutHtml : NormalForm -> Html
+layoutHtml : NormalForm a -> Html a
 layoutHtml normalForm =
   let
-    recurse : NormalForm -> List Html
+    recurse : NormalForm a -> List (Html a)
     recurse nf =    
       case nf of
         SEmpty ->
@@ -204,10 +204,10 @@ layoutHtml normalForm =
       (recurse normalForm)
 
 
-layoutString : NormalForm -> String
+layoutString : NormalForm a -> String
 layoutString normalForm =
   let
-    recurse : NormalForm -> String
+    recurse : NormalForm a -> String
     recurse nf =    
       case nf of
         SEmpty ->

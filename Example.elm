@@ -124,10 +124,8 @@ view ({ width, height }) =
 
 
 update : Msg -> Model -> ( Model, Cmd.Cmd Msg )
-update msg model =
-  case msg of
-    Resize size ->
-      ( size, Cmd.none )
+update (Resize size) model =
+  ( size, Cmd.none )
     
 
 subscriptions : Model -> Sub Msg

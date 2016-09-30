@@ -1,10 +1,12 @@
-module Example where
+module Example exposing (..)
 
 import Window
 import String
+import Task
 
 import Html exposing (Html, div)
 import Html.Attributes exposing (style)
+import Html.App as Html
 
 import PrettyPrint as PP exposing (..)
 import PrettyPrint.Util exposing (..)
@@ -75,7 +77,7 @@ exampleTree =
   ]
 
 
-render : Doc -> (Int, Int) -> Html
+render : Doc a -> (Int, Int) -> Html a
 render doc (width, height) =
   div
     [ style [("font-size", "12px")] ]
@@ -91,9 +93,43 @@ exampleDoc =
     doc
 
 
-main : Signal Html
+main : Program Never
 main =
-  Signal.map
-    (render (showTree exampleTree))
-    --(render exampleDoc)
-    Window.dimensions
+  Html.program
+    { init = model
+    , view = view
+    , update = update
+    , subscriptions = subscriptions
+    }
+
+
+type alias Model =
+  Window.Size
+
+
+type Msg =
+  Resize Model
+
+
+model : ( Model, Cmd.Cmd Msg )
+model =
+  ( { width = 0, height = 0 }
+  , Task.perform identity Resize Window.size
+  )
+
+
+view : Model -> Html Msg
+view ({ width, height }) =
+  render exampleDoc (width, height)
+
+
+update : Msg -> Model -> ( Model, Cmd.Cmd Msg )
+update msg model =
+  case msg of
+    Resize size ->
+      ( size, Cmd.none )
+    
+
+subscriptions : Model -> Sub Msg
+subscriptions _ =
+  Window.resizes Resize

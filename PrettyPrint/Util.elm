@@ -1,4 +1,4 @@
-module PrettyPrint.Util where
+module PrettyPrint.Util exposing (..)
 
 {-|
 @docs bracket
@@ -10,7 +10,7 @@ import PrettyPrint exposing (..)
 
 {-| For when you want an open marker, an indented portion (by the given indent),
 and a close marker -}
-bracket : Int -> (List Attribute, String) -> Doc -> (List Attribute, String) -> Doc
+bracket : Int -> (List (Attribute a), String) -> Doc a -> (List (Attribute a), String) -> Doc a
 bracket indent (leftAttrs, left) doc (rightAttrs, right) =
   group
     (PrettyPrint.text leftAttrs left

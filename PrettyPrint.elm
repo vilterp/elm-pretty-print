@@ -1,9 +1,9 @@
-module PrettyPrint
+module PrettyPrint exposing
   ( Doc
-  , empty, concat, nest, text, line
+  , empty, concat, nest, text, line, hcat
   , group
   , prettyHtml, prettyString
-  ) where
+  )
 
 {-| Based on [Wadler's paper][wadler]
 
@@ -14,7 +14,7 @@ Perhaps some of the primitives and combinators from
 [leijen]: https://hackage.haskell.org/package/wl-pprint-1.2/docs/Text-PrettyPrint-Leijen.html
 
 # Constructors
-@docs Doc, empty, concat, nest, text, line
+@docs Doc, empty, concat, hcat, nest, text, line
 
 # Combinators
 @docs group
@@ -29,50 +29,54 @@ import Html exposing (..)
 import Html.Attributes exposing (style)
 
 {-|-}
-type Doc
+type Doc msg
   = Empty
-  | Concat Doc Doc
-  | Nest Int Doc
-  | Text (List Attribute) String
+  | Concat (Doc msg) (Doc msg)
+  | Nest Int (Doc msg)
+  | Text (List (Attribute msg)) String
   | Line
-  | Union Doc Doc
+  | Union (Doc msg) (Doc msg)
 
 
 -- CONSTRUCTORS
 
 
 {-|-}
-empty : Doc
+empty : Doc msg
 empty =
   Empty
 
 
 {-|-}
-concat : Doc -> Doc -> Doc
+concat : Doc msg -> Doc msg -> Doc msg
 concat =
   Concat
 
+{-|-}
+hcat : List (Doc msg) -> Doc msg
+hcat = List.foldr concat empty
+
 
 {-| Indent the given doc by the given number of spaces. -}
-nest : Int -> Doc -> Doc
+nest : Int -> Doc msg -> Doc msg
 nest =
   Nest
 
 
 {-|-}
-text : List Attribute -> String -> Doc
+text : List (Attribute msg) -> String -> Doc msg
 text =
   Text
 
 
 {-| Line break -}
-line : Doc
+line : Doc msg
 line =
   Line
 
 
 -- not exposed
-union : Doc -> Doc -> Doc
+union : Doc msg -> Doc msg -> Doc msg
 union =
   Union
 
@@ -81,12 +85,12 @@ union =
 
 {-| Specify that the Doc should be printed without newlines if it fits in the
 available space, or without them if it doesn't -}
-group : Doc -> Doc
+group : Doc msg -> Doc msg
 group doc =
   union (flatten doc) doc
 
 
-flatten : Doc -> Doc
+flatten : Doc msg -> Doc msg
 flatten doc =
   case doc of
     Empty ->
@@ -111,30 +115,30 @@ flatten doc =
 -- RENDER
 
 
-type NormalForm
-  = SText (List Attribute) String NormalForm
+type NormalForm msg
+  = SText (List (Attribute msg)) String (NormalForm msg)
   | SEmpty
-  | SLine Int NormalForm
+  | SLine Int (NormalForm msg)
 
 
 {-| Pretty print the document to HTML which fits within the
 max width (in characters; font size up to you) -}
-prettyHtml : Int -> Doc -> Html
+prettyHtml : Int -> Doc msg -> Html msg
 prettyHtml maxWidth doc =
   layoutHtml (best maxWidth doc)
 
 
 {-| Pretty print the document to string which fits within the
 max width (in characters) -}
-prettyString : Int -> Doc -> String
+prettyString : Int -> Doc msg -> String
 prettyString maxWidth doc =
   layoutString (best maxWidth doc)
 
 
-best : Int -> Doc -> NormalForm
+best : Int -> Doc msg -> NormalForm msg
 best maxWidth doc =
   let
-    recurse : Int -> List (Int, Doc) -> NormalForm
+    recurse : Int -> List (Int, Doc msg) -> NormalForm msg
     recurse already pairs =
       --let d = Debug.log "mw,a,p" (maxWidth, already, pairs) in
       case pairs of
@@ -162,11 +166,11 @@ best maxWidth doc =
             (recurse already ((indent, docA)::rest))
             (recurse already ((indent, docB)::rest))
 
-    better : Int -> NormalForm -> NormalForm -> NormalForm
+    better : Int -> NormalForm msg -> NormalForm msg -> NormalForm msg
     better already nfA nfB =
       if fits (maxWidth - already) nfA then nfA else nfB
 
-    fits : Int -> NormalForm -> Bool
+    fits : Int -> NormalForm msg -> Bool
     fits width nf =
       if width < 0 then
         False
@@ -184,11 +188,11 @@ best maxWidth doc =
     recurse 0 [(0, doc)]
 
 
-layoutHtml : NormalForm -> Html
+layoutHtml : NormalForm msg -> Html msg
 layoutHtml normalForm =
   let
-    recurse : NormalForm -> List Html
-    recurse nf =    
+    recurse : NormalForm msg -> List (Html msg)
+    recurse nf =
       case nf of
         SEmpty ->
           []
@@ -204,11 +208,11 @@ layoutHtml normalForm =
       (recurse normalForm)
 
 
-layoutString : NormalForm -> String
+layoutString : NormalForm msg -> String
 layoutString normalForm =
   let
-    recurse : NormalForm -> String
-    recurse nf =    
+    recurse : NormalForm msg -> String
+    recurse nf =
       case nf of
         SEmpty ->
           ""

@@ -1,4 +1,4 @@
-module Example where
+module Example exposing (..)
 
 import Window
 import String
@@ -12,18 +12,28 @@ import PrettyPrint.Util exposing (..)
 type Tree =
   Node String (List Tree)
 
+type Msg = Resize Window.Size
+
+type alias Model = { size : Window.Size }
+
+initialModel : Model
+initialModel = { size = { width = 1000, height = 1000 } }
+
 showTree tree =
   case tree of
     Node s ts ->
-      group (text [] s `concat` nest (String.length s) (showBracket ts))
+      group (concat (text [] s) (nest (String.length s) (showBracket ts)))
 
 showBracket trees =
   case trees of
     [] ->
       empty
 
-    ts ->
-      text [] "[" `concat` nest 1 (showTrees ts) `concat` text [] "]"
+    ts -> hcat
+      [ text [] "["
+      , nest 1 (showTrees ts)
+      , text [] "]"
+      ]
 
 
 showTrees trees =
@@ -34,24 +44,28 @@ showTrees trees =
     [t] ->
       showTree t
 
-    t :: ts ->
-      showTree t `concat` text [] "," `concat` line `concat` showTrees ts
+    t :: ts -> hcat
+      [ showTree t
+      , text [] ","
+      , line
+      , showTrees ts
+      ]
 
-showTree' node =
+showTree_ node =
   case node of
     Node s ts ->
-      text [] s `concat` showBracket' ts
+      concat (text [] s) (showBracket_ ts)
 
-showBracket' ts =
+showBracket_ ts =
   case ts of
     [] ->
       empty
 
     ts ->
-      bracket 2 ([], "[") (showTrees' ts) ([], "]")
+      bracket 2 ([], "[") (showTrees_ ts) ([], "]")
 
 
-showTrees' trees =
+showTrees_ trees =
   case trees of
     [] ->
       empty
@@ -59,8 +73,12 @@ showTrees' trees =
     [t] ->
       showTree t
 
-    t :: ts ->
-      showTree t `concat` text [] "," `concat` line `concat` showTrees ts
+    t :: ts -> hcat
+      [ showTree t
+      , text [] ","
+      , line
+      , showTrees ts
+      ]
 
 
 -- render
@@ -75,25 +93,32 @@ exampleTree =
   ]
 
 
-render : Doc -> (Int, Int) -> Html
-render doc (width, height) =
+render : Doc msg -> Window.Size -> Html msg
+render doc size =
   div
     [ style [("font-size", "12px")] ]
-    [ prettyHtml (round (toFloat width / 7.3)) doc ] -- experimentally determined width of char...
+    [ prettyHtml (round (toFloat size.width / 7.3)) doc ] -- experimentally determined width of char...
 
 
 exampleDoc =
-  let
-    doc =
-      --Debug.log "doc" <|
-      (bracket 2 ([], "[") (text [] "foo") ([], "]"))
-  in
-    doc
+  bracket 2 ([], "[") (text [] "foo") ([], "]")
 
+update : Msg -> Model -> ( Model, Cmd Msg )
+update msg model =
+  case msg of
+    Resize size ->
+      ( { model | size = size }, Cmd.none )
 
-main : Signal Html
-main =
-  Signal.map
-    (render (showTree exampleTree))
-    --(render exampleDoc)
-    Window.dimensions
+view : Doc Msg -> Model -> Html Msg
+view doc model = Html.div []
+    [ render doc model.size
+    ]
+
+main : Program Never Model Msg
+main = Html.program
+  { init = (initialModel, Cmd.none)
+  , subscriptions = always (Window.resizes Resize)
+  , update = update
+  , view = view (showTree exampleTree)
+           -- view exampleDoc
+  }
